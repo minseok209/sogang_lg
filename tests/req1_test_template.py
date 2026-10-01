@@ -183,13 +183,119 @@ def run_tests():
     check("TE-3", '검색창에 "Kim" 입력', "Kim Minsoo만 표시",
           f'{len(r)}명: {[u["name"] for u in r]}', passed)
 
-    # =========================================================================
-    # ★ TODO 1 : TE 시나리오 #4 
-    # =========================================================================
-    # =========================================================================
-    # ★ TODO 2 : TE 시나리오 #... 
-    # ...
-    # ...
+    # -------------------------------------------------------------------------
+    # 추가 API 테스트 : 응답 필드 구성 / Content-Type / 대시보드 페이지
+    # -------------------------------------------------------------------------
+    required = {"userId", "name", "plan", "status", "deviceCount"}
+    missing = [u.get("userId", "?") for u in subscribers if not required <= set(u)]
+    check("API-02", "응답 항목별 필수 필드 포함 여부",
+          "userId/name/plan/status/deviceCount 모두 존재",
+          "누락 없음" if subscribers and not missing else f"누락: {missing}",
+          bool(subscribers) and not missing)
+
+    try:
+        with urllib.request.urlopen(BASE_URL + "/", timeout=5) as resp:
+            html = resp.read().decode("utf-8")
+            page_ok = resp.status == 200 and 'id="subscriber-body"' in html
+            actual = f"status={resp.status}, subscriber-body {'있음' if page_ok else '없음'}"
+    except Exception as e:
+        page_ok, actual = False, f"예외: {e}"
+    check("API-03", "GET / 대시보드 페이지 응답", "200 OK + Table(tbody) 존재", actual, page_ok)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #2 : 대시보드 접속 시 Table 자동 표시
+    #   app.js 에서 fetchSubscribers() 가 페이지 로드시 호출되고,
+    #   API 를 호출해 renderSubscribers() 로 이어지는지 정적 검사합니다.
+    #   (실제 화면 표시는 브라우저 UI 검증에서 별도로 확인)
+    # -------------------------------------------------------------------------
+    js = open(os.path.join("app", "static", "app.js"), encoding="utf-8").read()
+    js_lines = [ln.strip() for ln in js.splitlines()]
+    init_called = "fetchSubscribers();" in js_lines
+    calls_api = 'fetch("/api/subscribers")' in js
+    r = filter_subscribers(subscribers)
+    passed = init_called and calls_api and len(r) == 5
+    check("TE-2", "대시보드 접속 시 Table 자동 표시", "5명 목록 표시",
+          f"초기 호출={'O' if init_called else 'X'}, API 호출={'O' if calls_api else 'X'}, "
+          f"표시 대상 {len(r)}명", passed)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #4 : 검색 "Premium" → Premium 플랜 사용자만 표시
+    # -------------------------------------------------------------------------
+    r = filter_subscribers(subscribers, search="Premium")
+    expected_ids = sorted(u["userId"] for u in subscribers if u["plan"] == "Premium")
+    passed = bool(r) and sorted(u["userId"] for u in r) == expected_ids
+    check("TE-4", '검색창에 "Premium" 입력', "Premium 플랜 사용자만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #5 : 상태 필터 "Active" → Active 사용자만 표시
+    # -------------------------------------------------------------------------
+    r = filter_subscribers(subscribers, status="Active")
+    expected_ids = sorted(u["userId"] for u in subscribers if u["status"] == "Active")
+    passed = bool(r) and sorted(u["userId"] for u in r) == expected_ids
+    check("TE-5", '상태 필터 "Active" 선택', "Active 사용자만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #6 : 상태 필터 "Expired" → Jung Hyerin 만 표시
+    # -------------------------------------------------------------------------
+    r = filter_subscribers(subscribers, status="Expired")
+    passed = len(r) == 1 and r[0]["name"] == "Jung Hyerin"
+    check("TE-6", '상태 필터 "Expired" 선택', "Jung Hyerin만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #7 : 검색 + 필터 동시 적용
+    #   검색 "Premium" + 필터 "Active" → 두 조건을 모두 만족하는 사용자만
+    # -------------------------------------------------------------------------
+    r = filter_subscribers(subscribers, search="Premium", status="Active")
+    expected_ids = sorted(u["userId"] for u in subscribers
+                          if u["plan"] == "Premium" and u["status"] == "Active")
+    passed = bool(r) and sorted(u["userId"] for u in r) == expected_ids
+    check("TE-7", '검색 "Premium" + 필터 "Active" 동시 적용',
+          "두 조건 모두 만족하는 결과만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    # -------------------------------------------------------------------------
+    # TE 시나리오 #8 : 검색어 삭제 시 전체 목록 복원
+    # -------------------------------------------------------------------------
+    narrowed = filter_subscribers(subscribers, search="Kim")
+    restored = filter_subscribers(subscribers, search="")
+    passed = len(narrowed) == 1 and len(restored) == len(subscribers) == 5
+    check("TE-8", '검색 "Kim" → 검색어 삭제', "전체 목록(5명) 복원",
+          f"검색 시 {len(narrowed)}명 → 삭제 후 {len(restored)}명", passed)
+
+    # -------------------------------------------------------------------------
+    # 추가 시나리오 : 완료 조건 보강 (ID 검색 / 대소문자 / 결과 없음 / 실시간 반영)
+    # -------------------------------------------------------------------------
+    r = filter_subscribers(subscribers, search="U003")
+    passed = len(r) == 1 and r[0]["userId"] == "U003"
+    check("TE-9", '검색창에 ID "U003" 입력', "Park Junho만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    r = filter_subscribers(subscribers, search="kim minsoo")
+    passed = len(r) == 1 and r[0]["name"] == "Kim Minsoo"
+    check("TE-10", '소문자 "kim minsoo" 입력 (대소문자 무시)', "Kim Minsoo만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    r = filter_subscribers(subscribers, search="paused")
+    passed = len(r) == 1 and r[0]["status"] == "Paused"
+    check("TE-11", '검색창에 상태 "paused" 입력', "Paused 사용자(Park Junho)만 표시",
+          f'{len(r)}명: {[u["name"] for u in r]}', passed)
+
+    r = filter_subscribers(subscribers, search="zzz")
+    check("TE-12", '존재하지 않는 검색어 "zzz" 입력', "0명 (빈 Table)",
+          f"{len(r)}명", len(r) == 0)
+
+    bound_search = ('document.getElementById("subscriber-search")'
+                    '.addEventListener("input", renderSubscribers);') in js_lines
+    bound_filter = ('document.getElementById("subscriber-status-filter")'
+                    '.addEventListener("change", renderSubscribers);') in js_lines
+    check("TE-13", "검색/필터 결과 실시간 반영 (이벤트 바인딩)",
+          "input/change 이벤트에 renderSubscribers 연결",
+          f"search(input)={'O' if bound_search else 'X'}, "
+          f"filter(change)={'O' if bound_filter else 'X'}",
+          bound_search and bound_filter)
 
 
 # =============================================================================
@@ -209,7 +315,7 @@ def render_report():
     lines.append("| **프로젝트** | webOS Subscription Management Dashboard |")
     lines.append("| **검증 대상** | requirement_1.md |")
     lines.append(f"| **검증 일시** | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} |")
-    lines.append("| **작성자** | (여기에 이름을 적으세요) |")
+    lines.append("| **작성자** | 최민석 (PM / TE) |")
     lines.append("")
     lines.append(f"**총 {total}건 중 PASS {passed} / FAIL {failed} — Pass Rate {rate:.1f}%**")
     lines.append("")
@@ -259,7 +365,8 @@ def main():
     print(f" 결과: PASS {passed} / FAIL {failed} (총 {total}) - {rate:.1f}%")
     print(f" Report 저장: {os.path.relpath(REPORT_PATH, PROJECT_ROOT)}")
     print("=" * 60)
+    return 0 if failed == 0 else 1   # FAIL 이 있으면 종료 코드 1 (CI 배포 차단용)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
