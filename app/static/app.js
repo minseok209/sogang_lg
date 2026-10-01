@@ -36,28 +36,45 @@ function badgeClass(value) {
 //   subscribers 변수에 저장하고 renderSubscribers()를 호출하세요.
 //
 async function fetchSubscribers() {
-    // 1. GET /api/subscribers 호출
-    // 2. 응답을 subscribers 변수에 저장
-    // 3. renderSubscribers() 호출
+    const response = await fetch("/api/subscribers");
+    if (!response.ok) {
+        console.error(`Failed to fetch subscribers: ${response.status}`);
+        return;
+    }
+    subscribers = await response.json();
+    renderSubscribers();
 }
 
-// TODO [요구사항 #1-B]: subscribers 배열을 테이블에 렌더링하세요.
-//
 function renderSubscribers() {
     const tbody = document.getElementById("subscriber-body");
     const search = document.getElementById("subscriber-search").value.toLowerCase();
     const statusFilter = document.getElementById("subscriber-status-filter").value;
-    
-    // 1. 검색어와 상태 필터 값 가져오기
-    // 2. subscribers 배열 필터링
-    //    - 검색: name, plan, status, userId에 대해 부분 문자열 매칭
-    //    - 필터: status가 선택된 값과 일치
-    // 3. <tbody>에 <tr> 렌더링
-    //    - 표시 컬럼: userId, name, plan, status, deviceCount
-    //    - 각 행 클릭 시 selectSubscriber(userId) 호출
-    //    - 선택된 행(selectedUserId)에 "selected" 클래스 추가
 
-    // 여기에 구현하세요
+    const rows = document.createDocumentFragment();
+    for (const subscriber of subscribers) {
+        if (statusFilter && subscriber.status !== statusFilter) continue;
+        if (![subscriber.name, subscriber.plan, subscriber.status, subscriber.userId]
+            .some(value => String(value ?? "").toLowerCase().includes(search))) continue;
+
+        const row = document.createElement("tr");
+        row.classList.toggle("selected", subscriber.userId === selectedUserId);
+        row.addEventListener("click", () => selectSubscriber(subscriber.userId));
+
+        for (const field of ["userId", "name", "plan", "status", "deviceCount"]) {
+            const cell = document.createElement("td");
+            if (field === "status") {
+                const badge = document.createElement("span");
+                badge.className = badgeClass(subscriber.status);
+                badge.textContent = subscriber.status ?? "";
+                cell.appendChild(badge);
+            } else {
+                cell.textContent = subscriber[field] ?? "";
+            }
+            row.appendChild(cell);
+        }
+        rows.appendChild(row);
+    }
+    tbody.replaceChildren(rows);
 }
 
 
@@ -136,9 +153,8 @@ function renderUsageChart(trend) {
 // 이벤트 바인딩 + 초기화
 // =============================================================================
 function bindEvents() {
-    // [요구사항 #1] 완료 후 아래 주석을 해제하세요
-    // document.getElementById("subscriber-search").addEventListener("input", renderSubscribers);
-    // document.getElementById("subscriber-status-filter").addEventListener("change", renderSubscribers);
+    document.getElementById("subscriber-search").addEventListener("input", renderSubscribers);
+    document.getElementById("subscriber-status-filter").addEventListener("change", renderSubscribers);
 
     // [요구사항 #2] 완료 후 아래 주석을 해제하세요
     // document.getElementById("device-search").addEventListener("input", renderDevices);
@@ -147,5 +163,4 @@ function bindEvents() {
 
 bindEvents();
 
-// [요구사항 #1] 완료 후 아래 주석을 해제하세요
-// fetchSubscribers();
+fetchSubscribers();
