@@ -26,7 +26,7 @@
 | 대상 | 파일 | 상태 | 비고 |
 |------|------|:----:|------|
 | 가전 목록 API | `app/api/subscribers.py` | ✅ 구현됨 | U001 → 2개, U005 → `[]`, U999 → 404 확인 |
-| 사용 현황 API | `app/api/devices.py` | ❌ `pass` | 모든 ID에 `null` + **200** 반환 (D999도 200) |
+| 사용 현황 API | `app/api/devices.py` | ✅ 구현됨 (`2256f30`) | API-01~10 전부 PASS (2026-10-01) |
 | `selectSubscriber` / `renderDevices` / `selectDevice` / `renderUsageChart` | `app/static/app.js` | ❌ 미구현 | 주석만 있음 |
 | 가전 검색·필터 이벤트 | `app/static/app.js` `bindEvents()` | ❌ 주석 처리 | |
 
@@ -84,7 +84,7 @@
 
 - **PASS**: 화면 또는 응답이 기대 결과와 일치
 - **FAIL**: 불일치, 예외, 시간 초과(3~5초). 실패 화면은 `tests/reports/screenshots/req2_*.png`에 저장
-- **BLOCKED**: 선행 조건이 실패해 실행할 수 없음. 사용 현황 API(API-06)가 실패하면 UI-19~24는 BLOCKED로 기록한다. BLOCKED는 PASS로 세지 않는다.
+- **BLOCKED**: 선행 조건이 실패해 실행할 수 없음. 사용 현황 API(API-06) 또는 가전 목록 화면(UI-01)이 실패하면 UI-19~24는 BLOCKED로 기록한다. BLOCKED는 PASS로 세지 않는다.
 - 종료 코드: 전부 PASS일 때만 0. FAIL이나 BLOCKED가 하나라도 있으면 1 → PR 머지 기준으로 쓴다.
 
 화면 판정은 FE 구현 방식에 묶이지 않도록 다음 기준만 사용한다.

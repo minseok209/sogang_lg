@@ -396,9 +396,11 @@ def run_ui_tests(base, headed, usage_ok):
             ("UI-23", "다른 가전 클릭 시 차트 갱신 (TE-12)", "D002 데이터로 교체, 차트 1개만 존재"),
             ("UI-24", "구독자 변경 시 사용 현황 초기화", "usage-empty 표시, usage-detail 숨김, 내용 비움"),
         ]
-        if not usage_ok:
+        ui01_ok = any(r[0] == "UI-01" and r[5] == "PASS" for r in results)
+        if not usage_ok or not ui01_ok:
+            reason = "선행 조건 API-06(usage API) 실패" if not usage_ok else "선행 조건 UI-01(가전 목록 화면) 실패"
             for tc_id, sc, exp in usage_cases:
-                block(tc_id, "UI", sc, exp, "BLOCKED — 선행 조건 API-06(usage API) 실패")
+                block(tc_id, "UI", sc, exp, f"BLOCKED — {reason}")
         else:
             def ui19(p):
                 pick_user(p, "U001")
