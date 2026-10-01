@@ -6,7 +6,7 @@
 | 기준 코드 | `main` `125dec8` (요구사항 #1 검증 완료 시점) |
 | 작성자 | 최민석 (PM / TE) |
 | 작성일 | 2026-10-01 |
-| 자동화 | `tests/req2_e2e_test.py` (API 10건 + UI 27건) |
+| 자동화 | `tests/req2_e2e_test.py` (API 10건 + UI 28건) |
 
 ## 1. 검증 범위
 
@@ -27,8 +27,8 @@
 |------|------|:----:|------|
 | 가전 목록 API | `app/api/subscribers.py` | ✅ 구현됨 | U001 → 2개, U005 → `[]`, U999 → 404 확인 |
 | 사용 현황 API | `app/api/devices.py` | ✅ 구현됨 (`2256f30`) | API-01~10 전부 PASS (2026-10-01) |
-| `selectSubscriber` / `renderDevices` / `selectDevice` / `renderUsageChart` | `app/static/app.js` | ❌ 미구현 | 주석만 있음 |
-| 가전 검색·필터 이벤트 | `app/static/app.js` `bindEvents()` | ❌ 주석 처리 | |
+| `selectSubscriber` / `renderDevices` / `selectDevice` / `renderUsageChart` | `app/static/app.js` | ✅ 구현됨 (`bc6748e`) | 지연 응답 결함 1건 수정 (`1b74eca`) |
+| 가전 검색·필터 이벤트 | `app/static/app.js` `bindEvents()` | ✅ 연결됨 | |
 
 ### ⚠️ 사전 발견 이슈: CSS-1 (FE 참고)
 
@@ -77,6 +77,7 @@
 | UI-18 | 키 입력 실시간 반영 | 새로고침 없이 갱신 | 이벤트 바인딩 |
 | UI-22 | 가전 행 선택 표시 | 클릭한 가전만 `selected` | FE Step 3-2 |
 | UI-24 | 가전 선택 후 구독자 변경 | 사용 현황 초기화 | FE Step 1-3 |
+| UI-27 | 가전 조회가 느릴 때 다른 구독자로 변경 | 조회 중 이전 목록 0행 → 완료 후 새 목록 | FE 코드 리뷰 (BUG-2) |
 | UI-25 | 회귀: 구독자 검색 "Kim" | U001 | 요구사항 #1 |
 | UI-26 | 전체 실행 중 JS 오류 | 0건 | |
 
@@ -112,5 +113,7 @@ python tests/req2_e2e_test.py --base-url https://<배포 URL>
 | 현재 `main` (`125dec8`, 구현 전) | PASS 8 / FAIL 23 / BLOCKED 6 | 이미 구현된 가전 목록 API와 회귀 항목만 PASS, 나머지는 기대대로 FAIL/BLOCKED |
 | 요구사항 문서대로 만든 참조 구현 + 원본 CSS | PASS 35 / FAIL 2 | CSS-1 이슈만 FAIL (UI-00, UI-24) |
 | 참조 구현 + CSS-1 수정 | **PASS 37 / FAIL 0** | 올바른 구현은 전부 통과함 → 스크립트 신뢰 가능 |
+
+(UI-27은 FE 구현 후 코드 리뷰에서 추가했다. 결과는 `tests/reports/req2_test_report.md` 참고)
 
 참조 구현은 스크립트를 검증하기 위한 임시 코드다. 저장소에는 커밋하지 않았다.

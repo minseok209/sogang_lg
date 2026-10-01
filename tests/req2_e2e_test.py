@@ -458,6 +458,29 @@ def run_ui_tests(base, headed, usage_ok):
                 return st, all(st.values())
             ui("UI-24", *usage_cases[5][1:], ui24)
 
+        # ---------- 응답 지연 ----------
+        def ui27():
+            p = ctx.new_page()
+            p.on("pageerror", lambda e: page_errors.append(str(e)))
+            # U003 가전 조회만 1.5초 지연시켜 "조회 중" 상태를 재현
+            p.add_init_script("""const of = window.fetch; window.fetch = async (u, o) => {
+                if (String(u).includes('/subscribers/U003/')) await new Promise(r => setTimeout(r, 1500));
+                return of(u, o); };""")
+            p.goto(base + "/")
+            wait_rows(p, "#subscriber-body", [u["userId"] for u in SUBSCRIBERS])
+            pick_user(p, "U001")
+            p.locator("#subscriber-body tr", has_text="U003").click()
+            p.wait_for_timeout(200)
+            loading = rows(p, "#device-body")
+            final = wait_rows(p, "#device-body", device_ids("U003"))
+            passed = loading == [] and final == device_ids("U003")
+            if not passed:
+                shot(p, "UI-27")
+            check("UI-27", "UI", "가전 조회 지연 중 이전 사용자 목록 제거",
+                  "조회 중 0행 → 완료 후 U003 목록", f"조회 중={loading} → 완료 후={final}", passed)
+            p.close()
+        ui27()
+
         # ---------- 회귀 / 공통 ----------
         def ui25(p):
             p.fill("#subscriber-search", "Kim")
