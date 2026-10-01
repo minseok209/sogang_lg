@@ -12,7 +12,7 @@
 
 | 담당 | 작업 | 파일 | 상태 |
 |------|------|------|:----:|
-| FE | `badgeClass()` 상태별 클래스 매핑 | `app/static/app.js` | 대기 (현재 항상 `"badge"` 반환) |
+| FE | `badgeClass()` 상태별 클래스 매핑 | `app/static/app.js` | 완료 (`f02721c`) · 로컬 19/19 PASS |
 | PM | GitHub Actions CI 설정 | `.github/workflows/ci.yml` | 작성 완료 |
 | PM | Render Web Service 생성 및 Auto-Deploy 연결 | Render Dashboard | PM 본인 계정으로 진행 |
 | BE | 추가 구현 없음. CI 실패 시 API 원인 분석 지원 | — | — |
