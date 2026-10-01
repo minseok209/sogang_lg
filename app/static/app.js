@@ -95,6 +95,10 @@ async function selectSubscriber(userId) {
     document.getElementById("usage-detail").classList.add("hidden");
     document.getElementById("usage-info").replaceChildren();
 
+    // 조회 중에는 이전 사용자의 가전 목록을 지운다 (이전 가전 클릭 방지)
+    currentDevices = undefined;
+    renderDevices();
+
     let devices = null;
     try {
         const response = await fetch(`/api/subscribers/${encodeURIComponent(userId)}/devices`);
@@ -126,6 +130,7 @@ function renderDevices() {
 
     let message = null;
     if (selectedUserId === null) message = "Select a subscriber to view devices.";
+    else if (currentDevices === undefined) message = "Loading devices...";
     else if (currentDevices === null) message = "Failed to load devices.";
     else if (currentDevices.length === 0) message = "No registered devices";
 
